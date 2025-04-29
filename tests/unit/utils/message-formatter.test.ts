@@ -109,5 +109,89 @@ describe('MessageFormatter', () => {
       expect(blocks).toHaveLength(3); // 2 paragraphs + 1 divider
       expect(blocks[1]).toEqual({ type: 'divider' });
     });
+
+    it('should convert asterisk bullet points to list items', () => {
+      const blocks: any[] = [];
+      processTextContent('* Item 1\n* Item 2\n* Item 3', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '• Item 1\n• Item 2\n• Item 3'
+        }
+      });
+    });
+
+    it('should convert hyphen bullet points to list items', () => {
+      const blocks: any[] = [];
+      processTextContent('- Item 1\n- Item 2\n- Item 3', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '• Item 1\n• Item 2\n• Item 3'
+        }
+      });
+    });
+
+    it('should convert nested bullet points with proper indentation', () => {
+      const blocks: any[] = [];
+      processTextContent('* Item 1\n  * Nested item 1\n  * Nested item 2\n* Item 2', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '• Item 1\n  • Nested item 1\n  • Nested item 2\n• Item 2'
+        }
+      });
+    });
+
+    it('should convert multi-level nested bullet points', () => {
+      const blocks: any[] = [];
+      processTextContent('* Level 1\n  * Level 2\n    * Level 3\n  * Back to level 2', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '• Level 1\n  • Level 2\n    • Level 3\n  • Back to level 2'
+        }
+      });
+    });
+
+    it('should convert numeric bullet points to ordered list', () => {
+      const blocks: any[] = [];
+      processTextContent('1. First item\n2. Second item\n3. Third item', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '1. First item\n2. Second item\n3. Third item'
+        }
+      });
+    });
+
+    it('should handle mixed bullet types in the same content', () => {
+      const blocks: any[] = [];
+      processTextContent('* Asterisk item\n- Hyphen item\n1. Numbered item', blocks);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '• Asterisk item\n• Hyphen item\n1. Numbered item'
+        }
+      });
+    });
   });
 }); 
