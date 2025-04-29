@@ -18,8 +18,7 @@
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.1",
-    "@tryfabric/mack": "^1.2.1"
+    "@modelcontextprotocol/sdk": "1.0.1"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
