@@ -1,8 +1,10 @@
+// import { SlackClient } from '../../../src/services/slack-client.js';
 import { SlackClient } from '../../../src/services/slack-client';
 import { setupToolHandlers } from '../../../src/tools/handlers';
 
+
 // SlackClientのメソッドをモック
-jest.mock('../../../src/services/slack-client.js', () => {
+jest.mock('../../../src/services/slack-client', () => {
   return {
     SlackClient: jest.fn().mockImplementation(() => {
       return {
