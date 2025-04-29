@@ -3,41 +3,28 @@ import { SlackClient } from '../../../src/services/slack-client';
 import { setupToolHandlers } from '../../../src/tools/handlers';
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-// SlackClientのメソッドをモック
-jest.mock('../../../src/services/slack-client', () => {
-  const originalModule = jest.requireActual('../../../src/services/slack-client');
-
-  return {
-    ...originalModule,
-    SlackClient: function () {
-      return {
-        getChannels: jest.fn().mockResolvedValue({ ok: true, channels: [] }),
-        postMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        postReply: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        addReaction: jest.fn().mockResolvedValue({ ok: true }),
-        getChannelHistory: jest.fn().mockResolvedValue({ ok: true, messages: [] }),
-        getThreadReplies: jest.fn().mockResolvedValue({ ok: true, messages: [] }),
-        getUsers: jest.fn().mockResolvedValue({ ok: true, members: [] }),
-        getUserProfile: jest.fn().mockResolvedValue({ ok: true, profile: {} }),
-        getChannelIdByName: jest.fn().mockResolvedValue('C123'),
-        searchMessages: jest.fn().mockResolvedValue({ ok: true, messages: { matches: [] } }),
-        sendInfoMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        sendSuccessMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        sendWarningMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        sendErrorMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
-        sendCodeSnippet: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' })
-      };
-    }
-  };
-});
+// SlackClientの実装をモック
+jest.mock('../../../src/services/slack-client');
 
 describe('Tool Handlers', () => {
   let slackClient: any;
-  let handleTool: ReturnType<typeof setupToolHandlers>;
+  let handleTool: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // SlackClientのインスタンスを作成
     slackClient = new SlackClient('test-token');
+
+    // テスト用のモックメソッドを設定
+    slackClient.getChannels = jest.fn().mockResolvedValue({ ok: true, channels: [] });
+    slackClient.postMessage = jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' });
+    slackClient.postReply = jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' });
+    slackClient.getChannelIdByName = jest.fn().mockResolvedValue('C123');
+    slackClient.searchMessages = jest.fn().mockResolvedValue({ ok: true, messages: { matches: [] } });
+    slackClient.sendInfoMessage = jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' });
+
+    // ハンドラー関数を設定
     handleTool = setupToolHandlers(slackClient);
   });
 
