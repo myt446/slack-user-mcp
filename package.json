@@ -50,7 +50,6 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "isolatedModules": false
+    "testEnvironment": "node"
   }
 }

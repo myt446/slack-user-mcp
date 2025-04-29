@@ -14,8 +14,7 @@
       "@/*": [
         "./src/*"
       ]
-    },
-    "isolatedModules": false
+    }
   },
   "include": [
     "src/**/*"
@@ -24,10 +23,5 @@
     "node_modules",
     "dist",
     "tests"
-  ],
-  "paths": {
-    "@/*": [
-      "./src/*"
-    ]
-  }
+  ]
 }
