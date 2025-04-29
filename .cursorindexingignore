@@ -1,2 +1,4 @@
 # Don't index SpecStory auto-save files, but allow explicit context inclusion via @ references
+.envrc
 .specstory/**
+.DS_Store

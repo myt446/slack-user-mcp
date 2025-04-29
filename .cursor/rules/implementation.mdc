@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Code Implementation Guidelines
+
+## Directory Structure
+
+* Organize code logic into appropriate directory structures based on functionality
+* Separate concerns by creating dedicated modules for different aspects of the application
+* Use a clear and consistent directory naming convention
+* Group related files and functionalities together in the same directory
+* Avoid deep nesting of directories that might complicate navigation
+* Core business logic should be isolated from infrastructure and presentation layers
