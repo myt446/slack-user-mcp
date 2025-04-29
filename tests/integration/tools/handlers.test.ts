@@ -1,10 +1,9 @@
-// import { SlackClient } from '../../../src/services/slack-client.js';
-import { SlackClient } from '../../../src/services/slack-client';
-import { setupToolHandlers } from '../../../src/tools/handlers';
+import { SlackClient } from '../../../src/services/slack-client.js';
+import { setupToolHandlers } from '../../../src/tools/handlers.js';
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // SlackClientの実装をモック
-jest.mock('../../../src/services/slack-client');
+jest.mock('../../../src/services/slack-client.js');
 
 describe('Tool Handlers', () => {
   let slackClient: any;

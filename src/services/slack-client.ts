@@ -1,5 +1,5 @@
-import { MessageOptions } from "@/types/slack";
-import { convertTextToBlocks } from "@/utils/message-formatter";
+import { MessageOptions } from "../types/slack.js";
+import { convertTextToBlocks } from "../utils/message-formatter.js";
 
 
 /**

@@ -1,4 +1,4 @@
-import { SlackClient } from '../../../src/services/slack-client';
+import { SlackClient } from '../../../src/services/slack-client.js';
 import { jest } from '@jest/globals';
 
 // グローバルなfetchのモック

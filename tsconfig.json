@@ -24,10 +24,5 @@
     "node_modules",
     "dist",
     "tests"
-  ],
-  "paths": {
-    "@/*": [
-      "./src/*"
-    ]
-  }
+  ]
 }

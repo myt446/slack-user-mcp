@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { validateEnvironment } from './config/environment.js';
 import { SlackClient } from './services/slack-client.js';
 import { createServer } from './server.js';
+import { fileURLToPath } from 'url';
 
 /**
  * メインアプリケーション関数
@@ -31,8 +32,11 @@ export async function main() {
   }
 }
 
-// このifチェックを追加することでテスト時に自動実行を防ぎます
-if (require.main === module) {
+// ESモジュールでのエントリーポイントチェック
+const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
+  import.meta.url.endsWith(process.argv[1]);
+
+if (isMainModule) {
   main().catch((error) => {
     console.error("Fatal error in main():", error);
     process.exit(1);
