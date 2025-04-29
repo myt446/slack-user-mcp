@@ -1,12 +1,15 @@
 // import { SlackClient } from '../../../src/services/slack-client.js';
 import { SlackClient } from '../../../src/services/slack-client';
 import { setupToolHandlers } from '../../../src/tools/handlers';
-
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // SlackClientのメソッドをモック
 jest.mock('../../../src/services/slack-client', () => {
+  const originalModule = jest.requireActual('../../../src/services/slack-client');
+
   return {
-    SlackClient: jest.fn().mockImplementation(() => {
+    ...originalModule,
+    SlackClient: function () {
       return {
         getChannels: jest.fn().mockResolvedValue({ ok: true, channels: [] }),
         postMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
@@ -24,17 +27,17 @@ jest.mock('../../../src/services/slack-client', () => {
         sendErrorMessage: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' }),
         sendCodeSnippet: jest.fn().mockResolvedValue({ ok: true, ts: '1234.5678' })
       };
-    })
+    }
   };
 });
 
 describe('Tool Handlers', () => {
-  let slackClient: jest.Mocked<SlackClient>;
+  let slackClient: any;
   let handleTool: ReturnType<typeof setupToolHandlers>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    slackClient = new SlackClient('test-token') as jest.Mocked<SlackClient>;
+    slackClient = new SlackClient('test-token');
     handleTool = setupToolHandlers(slackClient);
   });
 

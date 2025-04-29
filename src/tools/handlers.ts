@@ -35,9 +35,14 @@ export function setupToolHandlers(slackClient: SlackClient) {
 
         case "slack_post_message": {
           const typedArgs = args as PostMessageArgs;
-          if (!typedArgs.channel_id || !typedArgs.text) {
-            throw new Error("Missing required arguments: channel_id and text");
+          const missingArgs = [];
+          if (!typedArgs.channel_id) missingArgs.push('channel_id');
+          if (!typedArgs.text) missingArgs.push('text');
+
+          if (missingArgs.length > 0) {
+            throw new Error(`Missing required arguments: ${missingArgs.join(' and ')}`);
           }
+
           return await slackClient.postMessage(
             typedArgs.channel_id,
             typedArgs.text,

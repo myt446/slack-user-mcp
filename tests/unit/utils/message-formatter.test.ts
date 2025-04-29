@@ -1,4 +1,5 @@
 import { convertTextToBlocks, processTextContent } from '../../../src/utils/message-formatter';
+import { describe, it, expect } from '@jest/globals';
 
 describe('MessageFormatter', () => {
   describe('convertTextToBlocks', () => {

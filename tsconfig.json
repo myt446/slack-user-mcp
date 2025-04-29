@@ -9,6 +9,7 @@
     "sourceMap": true,
     "declaration": true,
     "skipLibCheck": true,
+    "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -23,5 +24,10 @@
     "node_modules",
     "dist",
     "tests"
-  ]
+  ],
+  "paths": {
+    "@/*": [
+      "./src/*"
+    ]
+  }
 }

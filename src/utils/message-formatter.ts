@@ -49,7 +49,7 @@ export function convertTextToBlocks(text: string): any[] {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: "```" + (language ? language : "") + "\n" + codeContent + "```"
+        text: "```" + (language ? language : "") + "\n" + codeContent.trim() + "\n```"
       }
     });
 
@@ -155,26 +155,54 @@ export function processTextContent(text: string, blocks: any[]): void {
     }
   } else {
     // 単一段落の処理
+    // 行で分割
+    const lines = text.split('\n');
+    let currentIndex = 0;
+
     // 見出しの処理
-    if (text.startsWith('# ')) {
+    if (lines[0].startsWith('# ')) {
       blocks.push({
         type: "header",
         text: {
           type: "plain_text",
-          text: text.substring(2).trim(),
+          text: lines[0].substring(2).trim(),
           emoji: true
         }
       });
+      currentIndex = 1;
+
+      // 見出し後の残りのコンテンツがあれば追加
+      if (lines.length > 1) {
+        blocks.push({
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: lines.slice(currentIndex).join('\n')
+          }
+        });
+      }
     }
     // 中見出しと小見出し
-    else if (text.startsWith('## ') || text.startsWith('### ')) {
+    else if (lines[0].startsWith('## ') || lines[0].startsWith('### ')) {
       blocks.push({
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*" + text.replace(/^#+\s+/, '') + "*"
+          text: "*" + lines[0].replace(/^#+\s+/, '') + "*"
         }
       });
+      currentIndex = 1;
+
+      // 見出し後の残りのコンテンツがあれば追加
+      if (lines.length > 1) {
+        blocks.push({
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: lines.slice(currentIndex).join('\n')
+          }
+        });
+      }
     }
     // その他のテキスト
     else {

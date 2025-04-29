@@ -1,4 +1,5 @@
 import { SlackClient } from '../../../src/services/slack-client';
+import { jest } from '@jest/globals';
 
 // グローバルなfetchのモック
 global.fetch = jest.fn();
