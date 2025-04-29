@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "MCP server for interacting with Slack as a user",
   "license": "MIT",
-  "author": "Lars Hagen",
-  "homepage": "https://github.com/lars-hagen/slack-user-mcp",
-  "bugs": "https://github.com/lars-hagen/slack-user-mcp/issues",
+  "author": "Yoshiroh Miyata",
+  "homepage": "https://github.com/myt446/slack-user-mcp",
+  "bugs": "https://github.com/myt446/slack-user-mcp/issues",
   "type": "module",
   "bin": {
     "slack-user-mcp": "dist/index.js"
