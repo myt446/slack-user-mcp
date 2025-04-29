@@ -1,6 +1,5 @@
 import { MessageOptions } from "../types/slack.js";
-import { convertTextToBlocks } from "../utils/message-formatter.js";
-
+import { markdownToBlocks } from '@tryfabric/mack';
 
 /**
  * Slack APIとの通信を担当するクライアントクラス
@@ -58,9 +57,7 @@ export class SlackClient {
     text: string,
     options: MessageOptions = {}
   ): Promise<any> {
-    // BlockKitブロックを決定
-    const blocks = options.blocks ||
-      (options.mrkdwn !== false ? convertTextToBlocks(text) : null);
+    const blocks = markdownToBlocks(text);
 
     const response = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
@@ -68,9 +65,9 @@ export class SlackClient {
       body: JSON.stringify({
         channel: channel_id,
         text: text, // 通知用のフォールバックテキスト
-        blocks: blocks, // BlockKit形式のブロック
+        // blocks: blocks, // BlockKit形式のブロック
         as_user: this.isUserToken,
-        mrkdwn: options.mrkdwn !== false, // デフォルトはtrue
+        mrkdwn: true, // デフォルトはtrue
       }),
     });
 
@@ -91,9 +88,8 @@ export class SlackClient {
     text: string,
     options: MessageOptions = {}
   ): Promise<any> {
-    // BlockKitブロックを決定
-    const blocks = options.blocks ||
-      (options.mrkdwn !== false ? convertTextToBlocks(text) : null);
+
+    const blocks = markdownToBlocks(text);
 
     const response = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
@@ -102,9 +98,9 @@ export class SlackClient {
         channel: channel_id,
         thread_ts: thread_ts,
         text: text, // 通知用のフォールバックテキスト
-        blocks: blocks, // BlockKit形式のブロック
+        // blocks: blocks, // BlockKit形式のブロック
         as_user: this.isUserToken,
-        mrkdwn: options.mrkdwn !== false, // デフォルトはtrue
+        mrkdwn: true // デフォルトはtrue
       }),
     });
 
