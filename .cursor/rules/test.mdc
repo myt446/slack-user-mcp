@@ -1,0 +1,12 @@
+---
+description: 
+globs: *.test.ts
+alwaysApply: false
+---
+## Testing Guidelines
+
+- Tests should be executed using Jest
+- Test subject code should be properly extracted and isolated
+- Create a dedicated directory for each module with test code in the same directory
+- Develop both integration tests (for verifying results from large text inputs) and unit tests
+- Do not run slack api in tests.
