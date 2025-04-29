@@ -81,11 +81,59 @@ export function convertTextToBlocks(text: string): any[] {
 }
 
 /**
+ * 箇条書きのテキストを処理して変換する
+ * @param text 箇条書きテキスト
+ * @returns 変換後のテキスト
+ */
+function processListItems(text: string): string {
+  const lines = text.split('\n');
+  const processedLines = lines.map(line => {
+    // アスタリスク記号の箇条書きを変換
+    if (line.trim().match(/^\*\s+/)) {
+      return line.replace(/^(\s*)\*\s+/, '$1• ');
+    }
+    // ハイフン記号の箇条書きを変換
+    else if (line.trim().match(/^\-\s+/)) {
+      return line.replace(/^(\s*)\-\s+/, '$1• ');
+    }
+    // 数字箇条書きはそのまま保持
+    else {
+      return line;
+    }
+  });
+
+  return processedLines.join('\n');
+}
+
+/**
+ * テキストに箇条書きが含まれているかチェック
+ * @param text チェックするテキスト
+ * @returns 箇条書きが含まれているかの真偽値
+ */
+function containsListItems(text: string): boolean {
+  const lines = text.split('\n');
+  // 行の先頭（インデント可）が * か - か 数字. で始まる行が1つでもあればtrue
+  return lines.some(line => line.trim().match(/^(\*|\-|\d+\.)\s+/));
+}
+
+/**
  * テキストを分析して適切なBlockKit要素に変換
  * @param text 処理するテキスト
  * @param blocks 変換結果を追加するブロック配列
  */
 export function processTextContent(text: string, blocks: any[]): void {
+  // 箇条書きのチェック - 単一のセクションとして処理
+  if (containsListItems(text) && !text.includes("\n\n")) {
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: processListItems(text)
+      }
+    });
+    return;
+  }
+
   // 空行で段落を分割
   if (text.includes("\n\n")) {
     const paragraphs = text.split("\n\n");
@@ -115,13 +163,13 @@ export function processTextContent(text: string, blocks: any[]): void {
           }
         });
       }
-      // リストの処理（行ごとに * または - で始まるもの）
-      else if (/^[*\-]\s+/.test(trimmedParagraph.split('\n')[0])) {
+      // 箇条書きの処理
+      else if (containsListItems(trimmedParagraph)) {
         blocks.push({
           type: "section",
           text: {
             type: "mrkdwn",
-            text: trimmedParagraph
+            text: processListItems(trimmedParagraph)
           }
         });
       }
@@ -173,13 +221,24 @@ export function processTextContent(text: string, blocks: any[]): void {
 
       // 見出し後の残りのコンテンツがあれば追加
       if (lines.length > 1) {
-        blocks.push({
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: lines.slice(currentIndex).join('\n')
-          }
-        });
+        const remainingText = lines.slice(currentIndex).join('\n');
+        if (containsListItems(remainingText)) {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: processListItems(remainingText)
+            }
+          });
+        } else {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: remainingText
+            }
+          });
+        }
       }
     }
     // 中見出しと小見出し
@@ -195,14 +254,35 @@ export function processTextContent(text: string, blocks: any[]): void {
 
       // 見出し後の残りのコンテンツがあれば追加
       if (lines.length > 1) {
-        blocks.push({
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: lines.slice(currentIndex).join('\n')
-          }
-        });
+        const remainingText = lines.slice(currentIndex).join('\n');
+        if (containsListItems(remainingText)) {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: processListItems(remainingText)
+            }
+          });
+        } else {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: remainingText
+            }
+          });
+        }
       }
+    }
+    // 箇条書きの処理
+    else if (containsListItems(text)) {
+      blocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: processListItems(text)
+        }
+      });
     }
     // その他のテキスト
     else {
