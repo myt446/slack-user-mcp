@@ -1256,7 +1256,6 @@ async function main() {
             throw new Error(`Unknown tool: ${request.params.name}`);
         }
       } catch (error) {
-        console.error("Error executing tool:", error);
         return {
           content: [
             {

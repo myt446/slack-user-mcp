@@ -48,7 +48,6 @@ export function createServer(slackClient: SlackClient) {
           content: [{ type: "text", text: JSON.stringify(result) }],
         };
       } catch (error) {
-        console.error("Error executing tool:", error);
         return {
           content: [
             {

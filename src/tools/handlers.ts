@@ -210,7 +210,6 @@ export function setupToolHandlers(slackClient: SlackClient) {
           throw new Error(`Unknown tool: ${toolName}`);
       }
     } catch (error) {
-      console.error("Error executing tool:", error);
       return {
         error: error instanceof Error ? error.message : String(error),
       };
