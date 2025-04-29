@@ -50,6 +50,15 @@ interface GetUserProfileArgs {
   user_id: string;
 }
 
+interface SearchMessagesArgs {
+  query: string;
+  channel_id?: string;
+  channel_name?: string;
+  count?: number;
+  sort?: string;
+  sort_dir?: string;
+}
+
 // Tool definitions
 const listChannelsTool: Tool = {
   name: "slack_list_channels",
@@ -210,6 +219,44 @@ const getUserProfileTool: Tool = {
   },
 };
 
+const searchMessagesTool: Tool = {
+  name: "slack_search_messages",
+  description: "Slackワークスペース内のメッセージを検索する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description: "検索クエリ",
+      },
+      channel_id: {
+        type: "string",
+        description: "特定のチャンネルIDで検索を制限（省略可）",
+      },
+      channel_name: {
+        type: "string",
+        description: "特定のチャンネル名で検索を制限（省略可、channel_idが優先されます）",
+      },
+      count: {
+        type: "number",
+        description: "返す結果の数（デフォルト20、最大100）",
+        default: 20,
+      },
+      sort: {
+        type: "string",
+        description: "ソート基準（timestamp、score）",
+        default: "timestamp",
+      },
+      sort_dir: {
+        type: "string",
+        description: "ソート方向（asc、desc）",
+        default: "desc",
+      },
+    },
+    required: ["query"],
+  },
+};
+
 class SlackClient {
   private headers: { Authorization: string; "Content-Type": string };
   private isUserToken: boolean;
@@ -352,6 +399,40 @@ class SlackClient {
       { headers: this.headers },
     );
 
+    return response.json();
+  }
+
+  async getChannelIdByName(channelName: string): Promise<string | undefined> {
+    const response = await this.getChannels(200);
+    if (!response.ok) {
+      throw new Error(`Failed to get channels: ${response.error}`);
+    }
+    const channel = response.channels.find(
+      (c: any) => c.name === channelName || c.name === channelName.replace('#', '')
+    );
+    return channel ? channel.id : undefined;
+  }
+
+  async searchMessages(
+    query: string,
+    channel_id?: string,
+    count: number = 20,
+    sort: string = "timestamp",
+    sort_dir: string = "desc"
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      query,
+      count: Math.min(count, 100).toString(),
+      sort,
+      sort_dir,
+    });
+    if (channel_id) {
+      params.append("channel", channel_id);
+    }
+    const response = await fetch(
+      `https://slack.com/api/search.messages?${params}`,
+      { headers: this.headers },
+    );
     return response.json();
   }
 }
@@ -510,6 +591,30 @@ async function main() {
             };
           }
 
+          case "slack_search_messages": {
+            const args = request.params.arguments as unknown as SearchMessagesArgs;
+            if (!args.query) {
+              throw new Error("Missing required argument: query");
+            }
+            let channelId: string | undefined = args.channel_id;
+            if (!channelId && args.channel_name) {
+              channelId = await slackClient.getChannelIdByName(args.channel_name);
+              if (!channelId) {
+                throw new Error(`Channel not found with name: ${args.channel_name}`);
+              }
+            }
+            const response = await slackClient.searchMessages(
+              args.query,
+              channelId,
+              args.count,
+              args.sort,
+              args.sort_dir,
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
           default:
             throw new Error(`Unknown tool: ${request.params.name}`);
         }
@@ -541,6 +646,7 @@ async function main() {
         getThreadRepliesTool,
         getUsersTool,
         getUserProfileTool,
+        searchMessagesTool,
       ],
     };
   });
