@@ -17,12 +17,16 @@ interface ListChannelsArgs {
 interface PostMessageArgs {
   channel_id: string;
   text: string;
+  blocks?: any[];      // 追加：カスタムブロック
+  mrkdwn?: boolean;    // 追加：マークダウン形式かどうか
 }
 
 interface ReplyToThreadArgs {
   channel_id: string;
   thread_ts: string;
   text: string;
+  blocks?: any[];      // 追加：カスタムブロック
+  mrkdwn?: boolean;    // 追加：マークダウン形式かどうか
 }
 
 interface AddReactionArgs {
@@ -57,6 +61,27 @@ interface SearchMessagesArgs {
   count?: number;
   sort?: string;
   sort_dir?: string;
+}
+
+interface MessageOptions {
+  blocks?: any[];    // カスタムBlockKit要素
+  mrkdwn?: boolean;  // trueの場合マークダウンとして処理
+}
+
+// 新しいツールタイプの引数
+interface InfoMessageArgs {
+  channel_id: string;
+  title: string;
+  text: string;
+  thread_ts?: string;
+}
+
+interface CodeSnippetArgs {
+  channel_id: string;
+  title: string;
+  code: string;
+  language?: string;
+  thread_ts?: string;
 }
 
 // Tool definitions
@@ -257,6 +282,146 @@ const searchMessagesTool: Tool = {
   },
 };
 
+// ここから新しいツール定義を追加
+const sendInfoMessageTool: Tool = {
+  name: "slack_send_info_message",
+  description: "情報メッセージを送信する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      channel_id: {
+        type: "string",
+        description: "送信先チャンネルID",
+      },
+      title: {
+        type: "string",
+        description: "メッセージのタイトル",
+      },
+      text: {
+        type: "string",
+        description: "メッセージの本文（マークダウン形式可）",
+      },
+      thread_ts: {
+        type: "string",
+        description: "返信先のスレッドタイムスタンプ（省略可）",
+      },
+    },
+    required: ["channel_id", "title", "text"],
+  },
+};
+
+const sendSuccessMessageTool: Tool = {
+  name: "slack_send_success_message",
+  description: "成功メッセージを送信する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      channel_id: {
+        type: "string",
+        description: "送信先チャンネルID",
+      },
+      title: {
+        type: "string",
+        description: "メッセージのタイトル",
+      },
+      text: {
+        type: "string",
+        description: "メッセージの本文（マークダウン形式可）",
+      },
+      thread_ts: {
+        type: "string",
+        description: "返信先のスレッドタイムスタンプ（省略可）",
+      },
+    },
+    required: ["channel_id", "title", "text"],
+  },
+};
+
+const sendWarningMessageTool: Tool = {
+  name: "slack_send_warning_message",
+  description: "警告メッセージを送信する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      channel_id: {
+        type: "string",
+        description: "送信先チャンネルID",
+      },
+      title: {
+        type: "string",
+        description: "メッセージのタイトル",
+      },
+      text: {
+        type: "string",
+        description: "メッセージの本文（マークダウン形式可）",
+      },
+      thread_ts: {
+        type: "string",
+        description: "返信先のスレッドタイムスタンプ（省略可）",
+      },
+    },
+    required: ["channel_id", "title", "text"],
+  },
+};
+
+const sendErrorMessageTool: Tool = {
+  name: "slack_send_error_message",
+  description: "エラーメッセージを送信する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      channel_id: {
+        type: "string",
+        description: "送信先チャンネルID",
+      },
+      title: {
+        type: "string",
+        description: "メッセージのタイトル",
+      },
+      text: {
+        type: "string",
+        description: "メッセージの本文（マークダウン形式可）",
+      },
+      thread_ts: {
+        type: "string",
+        description: "返信先のスレッドタイムスタンプ（省略可）",
+      },
+    },
+    required: ["channel_id", "title", "text"],
+  },
+};
+
+const sendCodeSnippetTool: Tool = {
+  name: "slack_send_code_snippet",
+  description: "コードスニペットを送信する",
+  inputSchema: {
+    type: "object",
+    properties: {
+      channel_id: {
+        type: "string",
+        description: "送信先チャンネルID",
+      },
+      title: {
+        type: "string",
+        description: "スニペットのタイトル",
+      },
+      code: {
+        type: "string",
+        description: "コードスニペットの内容",
+      },
+      language: {
+        type: "string",
+        description: "コードの言語（省略可）",
+      },
+      thread_ts: {
+        type: "string",
+        description: "返信先のスレッドタイムスタンプ（省略可）",
+      },
+    },
+    required: ["channel_id", "code"],
+  },
+};
+
 class SlackClient {
   private headers: { Authorization: string; "Content-Type": string };
   private isUserToken: boolean;
@@ -289,14 +454,24 @@ class SlackClient {
     return response.json();
   }
 
-  async postMessage(channel_id: string, text: string): Promise<any> {
+  async postMessage(
+    channel_id: string,
+    text: string,
+    options: MessageOptions = {}
+  ): Promise<any> {
+    // BlockKitブロックを決定
+    const blocks = options.blocks ||
+      (options.mrkdwn !== false ? this.convertTextToBlocks(text) : null);
+
     const response = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify({
         channel: channel_id,
-        text: text,
-        as_user: this.isUserToken
+        text: text, // 通知用のフォールバックテキスト
+        blocks: blocks, // BlockKit形式のブロック
+        as_user: this.isUserToken,
+        mrkdwn: options.mrkdwn !== false, // デフォルトはtrue
       }),
     });
 
@@ -307,19 +482,207 @@ class SlackClient {
     channel_id: string,
     thread_ts: string,
     text: string,
+    options: MessageOptions = {}
   ): Promise<any> {
+    // BlockKitブロックを決定
+    const blocks = options.blocks ||
+      (options.mrkdwn !== false ? this.convertTextToBlocks(text) : null);
+
     const response = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify({
         channel: channel_id,
         thread_ts: thread_ts,
-        text: text,
-        as_user: this.isUserToken
+        text: text, // 通知用のフォールバックテキスト
+        blocks: blocks, // BlockKit形式のブロック
+        as_user: this.isUserToken,
+        mrkdwn: options.mrkdwn !== false, // デフォルトはtrue
       }),
     });
 
     return response.json();
+  }
+
+  // マークダウンテキストをBlockKit形式に変換するヘルパーメソッド
+  private convertTextToBlocks(text: string): any[] {
+    try {
+      // テキストが既にJSON形式のブロック配列かどうかを確認
+      const parsedBlocks = JSON.parse(text);
+      if (Array.isArray(parsedBlocks) && parsedBlocks.length > 0 && parsedBlocks[0].type) {
+        return parsedBlocks;
+      }
+    } catch (e) {
+      // JSONとして解析できない場合は通常のテキストとして扱う
+    }
+
+    // コードブロックを分離（```で囲まれたコード）
+    const blocks: any[] = [];
+    const codeBlockRegex = /```([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      // コードブロック前のテキストを処理
+      if (match.index > lastIndex) {
+        const textBefore = text.substring(lastIndex, match.index).trim();
+        if (textBefore) {
+          this.processTextContent(textBefore, blocks);
+        }
+      }
+
+      // コードブロックを追加
+      let codeContent = match[1];
+      let language = "";
+
+      // 言語指定がある場合は抽出
+      const firstLineBreak = codeContent.indexOf('\n');
+      if (firstLineBreak > 0) {
+        const possibleLang = codeContent.substring(0, firstLineBreak).trim();
+        if (possibleLang && !possibleLang.includes(' ')) {
+          language = possibleLang;
+          codeContent = codeContent.substring(firstLineBreak + 1);
+        }
+      }
+
+      blocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "```" + (language ? language : "") + "\n" + codeContent + "```"
+        }
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // 残りのテキストを処理
+    if (lastIndex < text.length) {
+      const remainingText = text.substring(lastIndex).trim();
+      if (remainingText) {
+        this.processTextContent(remainingText, blocks);
+      }
+    }
+
+    // ブロックが空の場合は単一のブロックを返す
+    if (blocks.length === 0) {
+      return [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: text
+          }
+        }
+      ];
+    }
+
+    return blocks;
+  }
+
+  // テキストを分析して適切なBlockKit要素に変換
+  private processTextContent(text: string, blocks: any[]): void {
+    // 空行で段落を分割
+    if (text.includes("\n\n")) {
+      const paragraphs = text.split("\n\n");
+
+      for (const paragraph of paragraphs) {
+        const trimmedParagraph = paragraph.trim();
+        if (!trimmedParagraph) continue;
+
+        // 見出しの処理
+        if (trimmedParagraph.startsWith('# ')) {
+          blocks.push({
+            type: "header",
+            text: {
+              type: "plain_text",
+              text: trimmedParagraph.substring(2).trim(),
+              emoji: true
+            }
+          });
+        }
+        // 中見出しと小見出し（BlockKitは一種類のヘッダーしかサポートしないため、セクションとして扱う）
+        else if (trimmedParagraph.startsWith('## ') || trimmedParagraph.startsWith('### ')) {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "*" + trimmedParagraph.replace(/^#+\s+/, '') + "*"
+            }
+          });
+        }
+        // リストの処理（行ごとに * または - で始まるもの）
+        else if (/^[*\-]\s+/.test(trimmedParagraph.split('\n')[0])) {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: trimmedParagraph
+            }
+          });
+        }
+        // 引用の処理（> で始まる行）
+        else if (trimmedParagraph.startsWith('> ')) {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: trimmedParagraph
+            }
+          });
+        }
+        // 通常のテキストブロック
+        else {
+          blocks.push({
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: trimmedParagraph
+            }
+          });
+        }
+
+        // 段落間の区切り（最後の段落には追加しない）
+        if (paragraph !== paragraphs[paragraphs.length - 1]) {
+          blocks.push({
+            type: "divider"
+          });
+        }
+      }
+    } else {
+      // 単一段落の処理
+      // 見出しの処理
+      if (text.startsWith('# ')) {
+        blocks.push({
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: text.substring(2).trim(),
+            emoji: true
+          }
+        });
+      }
+      // 中見出しと小見出し
+      else if (text.startsWith('## ') || text.startsWith('### ')) {
+        blocks.push({
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*" + text.replace(/^#+\s+/, '') + "*"
+          }
+        });
+      }
+      // その他のテキスト
+      else {
+        blocks.push({
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: text
+          }
+        });
+      }
+    }
   }
 
   async addReaction(
@@ -435,6 +798,190 @@ class SlackClient {
     );
     return response.json();
   }
+
+  // 情報メッセージを送信
+  async sendInfoMessage(
+    channel_id: string,
+    title: string,
+    text: string,
+    thread_ts?: string
+  ): Promise<any> {
+    const blocks = [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: title,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: text
+        }
+      },
+      {
+        type: "divider"
+      }
+    ];
+
+    const options = { blocks };
+
+    if (thread_ts) {
+      return this.postReply(channel_id, thread_ts, title, options);
+    } else {
+      return this.postMessage(channel_id, title, options);
+    }
+  }
+
+  // 成功メッセージを送信
+  async sendSuccessMessage(
+    channel_id: string,
+    title: string,
+    text: string,
+    thread_ts?: string
+  ): Promise<any> {
+    const blocks = [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: `:white_check_mark: ${title}`,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: text
+        }
+      },
+      {
+        type: "divider"
+      }
+    ];
+
+    const options = { blocks };
+
+    if (thread_ts) {
+      return this.postReply(channel_id, thread_ts, title, options);
+    } else {
+      return this.postMessage(channel_id, title, options);
+    }
+  }
+
+  // 警告メッセージを送信
+  async sendWarningMessage(
+    channel_id: string,
+    title: string,
+    text: string,
+    thread_ts?: string
+  ): Promise<any> {
+    const blocks = [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: `:warning: ${title}`,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: text
+        }
+      },
+      {
+        type: "divider"
+      }
+    ];
+
+    const options = { blocks };
+
+    if (thread_ts) {
+      return this.postReply(channel_id, thread_ts, title, options);
+    } else {
+      return this.postMessage(channel_id, title, options);
+    }
+  }
+
+  // エラーメッセージを送信
+  async sendErrorMessage(
+    channel_id: string,
+    title: string,
+    text: string,
+    thread_ts?: string
+  ): Promise<any> {
+    const blocks = [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: `:x: ${title}`,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: text
+        }
+      },
+      {
+        type: "divider"
+      }
+    ];
+
+    const options = { blocks };
+
+    if (thread_ts) {
+      return this.postReply(channel_id, thread_ts, title, options);
+    } else {
+      return this.postMessage(channel_id, title, options);
+    }
+  }
+
+  // コードスニペットを送信
+  async sendCodeSnippet(
+    channel_id: string,
+    title: string,
+    code: string,
+    language: string = "",
+    thread_ts?: string
+  ): Promise<any> {
+    const codeWithBackticks = "```" + (language ? language + "\n" : "") + code + "```";
+
+    const blocks = [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: title ? `*${title}*` : "コードスニペット"
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: codeWithBackticks
+        }
+      }
+    ];
+
+    const options = { blocks };
+
+    if (thread_ts) {
+      return this.postReply(channel_id, thread_ts, title || "コードスニペット", options);
+    } else {
+      return this.postMessage(channel_id, title || "コードスニペット", options);
+    }
+  }
 }
 
 async function main() {
@@ -489,12 +1036,16 @@ async function main() {
             const args = request.params.arguments as unknown as PostMessageArgs;
             if (!args.channel_id || !args.text) {
               throw new Error(
-                "Missing required arguments: channel_id and text",
+                "Missing required arguments: channel_id and text"
               );
             }
             const response = await slackClient.postMessage(
               args.channel_id,
               args.text,
+              {
+                blocks: args.blocks,
+                mrkdwn: args.mrkdwn
+              }
             );
             return {
               content: [{ type: "text", text: JSON.stringify(response) }],
@@ -506,13 +1057,17 @@ async function main() {
               .arguments as unknown as ReplyToThreadArgs;
             if (!args.channel_id || !args.thread_ts || !args.text) {
               throw new Error(
-                "Missing required arguments: channel_id, thread_ts, and text",
+                "Missing required arguments: channel_id, thread_ts, and text"
               );
             }
             const response = await slackClient.postReply(
               args.channel_id,
               args.thread_ts,
               args.text,
+              {
+                blocks: args.blocks,
+                mrkdwn: args.mrkdwn
+              }
             );
             return {
               content: [{ type: "text", text: JSON.stringify(response) }],
@@ -615,6 +1170,88 @@ async function main() {
             };
           }
 
+          // 新しいツールのケースを追加
+          case "slack_send_info_message": {
+            const args = request.params.arguments as unknown as InfoMessageArgs;
+            if (!args.channel_id || !args.title || !args.text) {
+              throw new Error("Missing required arguments: channel_id, title, and text");
+            }
+            const response = await slackClient.sendInfoMessage(
+              args.channel_id,
+              args.title,
+              args.text,
+              args.thread_ts
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
+          case "slack_send_success_message": {
+            const args = request.params.arguments as unknown as InfoMessageArgs;
+            if (!args.channel_id || !args.title || !args.text) {
+              throw new Error("Missing required arguments: channel_id, title, and text");
+            }
+            const response = await slackClient.sendSuccessMessage(
+              args.channel_id,
+              args.title,
+              args.text,
+              args.thread_ts
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
+          case "slack_send_warning_message": {
+            const args = request.params.arguments as unknown as InfoMessageArgs;
+            if (!args.channel_id || !args.title || !args.text) {
+              throw new Error("Missing required arguments: channel_id, title, and text");
+            }
+            const response = await slackClient.sendWarningMessage(
+              args.channel_id,
+              args.title,
+              args.text,
+              args.thread_ts
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
+          case "slack_send_error_message": {
+            const args = request.params.arguments as unknown as InfoMessageArgs;
+            if (!args.channel_id || !args.title || !args.text) {
+              throw new Error("Missing required arguments: channel_id, title, and text");
+            }
+            const response = await slackClient.sendErrorMessage(
+              args.channel_id,
+              args.title,
+              args.text,
+              args.thread_ts
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
+          case "slack_send_code_snippet": {
+            const args = request.params.arguments as unknown as CodeSnippetArgs;
+            if (!args.channel_id || !args.code) {
+              throw new Error("Missing required arguments: channel_id and code");
+            }
+            const response = await slackClient.sendCodeSnippet(
+              args.channel_id,
+              args.title || "",
+              args.code,
+              args.language,
+              args.thread_ts
+            );
+            return {
+              content: [{ type: "text", text: JSON.stringify(response) }],
+            };
+          }
+
           default:
             throw new Error(`Unknown tool: ${request.params.name}`);
         }
@@ -647,6 +1284,11 @@ async function main() {
         getUsersTool,
         getUserProfileTool,
         searchMessagesTool,
+        sendInfoMessageTool,
+        sendSuccessMessageTool,
+        sendWarningMessageTool,
+        sendErrorMessageTool,
+        sendCodeSnippetTool,
       ],
     };
   });
